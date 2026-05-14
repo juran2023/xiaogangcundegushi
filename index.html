@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>小岗村的故事 - 拖拽排序</title>
+    <style>
+        :root {
+            --bg: #fdf6e8;
+            --bg-warm: #fef9f0;
+            --green-light: #e8f5e9;
+            --green: #7cb342;
+            --green-dark: #558b2f;
+            --gold: #f9a825;
+            --gold-light: #fff8e1;
+            --coral: #ff8a65;
+            --coral-light: #fff3e0;
+            --blue: #64b5f6;
+            --blue-light: #e3f2fd;
+            --pink: #f06292;
+            --pink-light: #fce4ec;
+            --brown: #8d6e63;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --card-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.15);
+            --card-shadow-drag: 0 16px 40px rgba(0, 0, 0, 0.22);
+            --slot-border: #c8b89a;
+            --slot-bg: #fefefe;
+            --text-dark: #4a3728;
+            --text-medium: #6b5040;
+            --text-light: #8d6e63;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'Hiragino Sans GB', -apple-system,
+                BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #fef9f0 0%, #fdf3e0 15%, #fef8ec 30%, #fdf4e2 50%, #fef9f0 70%, #fdf3e0 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            cursor: default;
+            position: relative;
+        }
+
+        /* 背景装饰层 */
+        .bg-decoration {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .deco-item {
+            position: absolute;
+            font-size: 28px;
+            opacity: 0.35;
+            pointer-events: none;
+            animation: floatAround 8s ease-in-out infinite;
+            filter: blur(0.5px);
+        }
+        .deco-item:nth-child(1) {
+            top: 6%;
+            left: 5%;
+            animation-delay: 0s;
+            font-size: 32px;
+        }
+        .deco-item:nth-child(2) {
+            top: 12%;
+            right: 7%;
+            animation-delay: -1.5s;
+            font-size: 26px;
+        }
+        .deco-item:nth-child(3) {
+            top: 22%;
+            left: 3%;
+            animation-delay: -3s;
+            font-size: 30px;
+        }
+        .deco-item:nth-child(4) {
+            top: 18%;
+            right: 12%;
+            animation-delay: -4.5s;
+            font-size: 24px;
+        }
+        .deco-item:nth-child(5) {
+            top: 35%;
+            left: 8%;
+            animation-delay: -6s;
+            font-size: 22px;
+        }
+        .deco-item:nth-child(6) {
+            top: 30%;
+            right: 4%;
+            animation-delay: -2s;
+            font-size: 34px;
+        }
+        .deco-item:nth-child(7) {
+            top: 50%;
+            left: 4%;
+            animation-delay: -5s;
+            font-size: 28px;
+        }
+        .deco-item:nth-child(8) {
+            top: 55%;
+            right: 9%;
+            animation-delay: -3.5s;
+            font-size: 26px;
+        }
+        .deco-item:nth-child(9) {
+            top: 70%;
+            left: 10%;
+            animation-delay: -7s;
+            font-size: 30px;
+        }
+        .deco-item:nth-child(10) {
+            top: 75%;
+            right: 5%;
+            animation-delay: -1s;
+            font-size: 24px;
+        }
+        .deco-item:nth-child(11) {
+            top: 85%;
+            left: 6%;
+            animation-delay: -4s;
+            font-size: 28px;
+        }
+        .deco-item:nth-child(12) {
+            top: 90%;
+            right: 11%;
+            animation-delay: -6.5s;
+            font-size: 22px;
+        }
+
+        @keyframes floatAround {
+            0%,
+            100% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+            20% {
+                transform: translateY(-18px) translateX(8px) rotate(3deg);
+            }
+            40% {
+                transform: translateY(-6px) translateX(-6px) rotate(-2deg);
+            }
+            60% {
+                transform: translateY(-22px) translateX(-4px) rotate(4deg);
+            }
+            80% {
+                transform: translateY(-10px) translateX(10px) rotate(-3deg);
+            }
+        }
+
+        /* 主容器 */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* 标题区域 */
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .header-icon-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 2px;
+        }
+        .header-icon-row .icon-spark {
+            font-size: 22px;
+            animation: sparkle 1.5s ease-in-out infinite;
+        }
+        .header-icon-row .icon-spark:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .header-icon-row .icon-spark:nth-child(3) {
+            animation-delay: 0.75s;
+        }
+
+        @keyframes sparkle {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+        }
+
+        .title {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 700;
+            color: #5d4037;
+            letter-spacing: 0.06em;
+            text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.6);
+            position: relative;
+            display: inline-block;
+        }
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 10%;
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #f9a825, #ffb74d, #f9a825, transparent);
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            color: #8d6e63;
+            margin-top: 8px;
+            letter-spacing: 0.04em;
+        }
+
+        /* 提示文字 */
+        .hint-text {
+            font-size: 0.9rem;
+            color: #a1887f;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .hint-text .hint-emoji {
+            font-size: 1.1rem;
+        }
+
+        /* 上方空位区域 */
+        .slots-section {
+            width: 100%;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .slots-label {
+            font-size: 0.85rem;
+            color: #a1887f;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .slots-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 14px 10px;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 20px;
+            border: 2px dashed #d7ccc8;
+            min-height: 100px;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .slots-container.highlight-zone {
+            border-color: #f9a825;
+            background: rgba(255, 248, 225, 0.7);
+            box-shadow: 0 0 30px rgba(249, 168, 37, 0.25);
+            border-style: solid;
+        }
+
+        .slot {
+            width: 130px;
+            min-height: 90px;
+            border: 2.5px dashed #c8b89a;
+            border-radius: 16px;
+            background: #fefefe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: default;
+            flex-shrink: 0;
+        }
+        .slot .slot-number {
+            position: absolute;
+            top: 6px;
+            left: 10px;
+            font-size: 0.7rem;
+            color: #c8b89a;
+            font-weight: 600;
+            pointer-events: none;
+            transition: color 0.25s;
+        }
+        .slot.slot-highlight {
+            border-color: #f9a825;
+            background: #fffde7;
+            border-style: solid;
+            box-shadow: 0 0 20px rgba(249, 168, 37, 0.35);
+            transform: scale(1.04);
+            z-index: 5;
+        }
+        .slot.slot-highlight .slot-number {
+            color: #f9a825;
+        }
+        .slot.slot-occupied {
+            border-style: solid;
+            border-color: #bcaaa4;
+            background: #fafafa;
+        }
+        .slot .empty-placeholder {
+            color: #d7ccc8;
+            font-size: 0.78rem;
+            pointer-events: none;
+            text-align: center;
+            padding: 6px;
+            letter-spacing: 0.03em;
+        }
+
+        /* 卡片样式 */
+        .card {
+            width: 120px;
+            min-height: 80px;
+            padding: 12px 10px;
+            border-radius: 14px;
+            cursor: grab;
+            touch-action: none;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease,
+                opacity 0.2s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #4a3728;
+            letter-spacing: 0.03em;
+            line-height: 1.4;
+            box-shadow: var(--card-shadow);
+            z-index: 1;
+            will-change: transform;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+        }
+        .card:active {
+            cursor: grabbing;
+        }
+        .card.card-dragging {
+            opacity: 0.45;
+            transform: scale(0.95);
+            box-shadow: none;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .card .card-icon {
+            font-size: 1.6rem;
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+        .card .card-text {
+            pointer-events: none;
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        /* 5张卡片的不同配色 */
+        .card-color-0 {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-color: #ffe0b2;
+        }
+        .card-color-1 {
+            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+            border-color: #f8bbd0;
+        }
+        .card-color-2 {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-color: #c8e6c9;
+        }
+        .card-color-3 {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-color: #bbdefb;
+        }
+        .card-color-4 {
+            background: linear-gradient(135deg, #fff8e1, #ffecb3);
+            border-color: #ffecb3;
+        }
+
+        /* 下方卡片池 */
+        .pool-section {
+            width: 100%;
+            position: relative;
+        }
+        .pool-label {
+            font-size: 0.85rem;
+            color: #a1887f;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .cards-pool {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 18px 14px;
+            background: rgba(255, 255, 255, 0.45);
+            border-radius: 20px;
+            border: 2px dashed #e0d5c7;
+            min-height: 100px;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .cards-pool.pool-highlight {
+            border-color: #7cb342;
+            background: rgba(232, 245, 233, 0.65);
+            box-shadow: 0 0 24px rgba(124, 179, 66, 0.2);
+            border-style: solid;
+        }
+        .cards-pool .pool-empty-hint {
+            color: #c8b89a;
+            font-size: 0.8rem;
+            pointer-events: none;
+            letter-spacing: 0.03em;
+            text-align: center;
+        }
+
+        /* 幽灵拖拽元素 */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.92;
+            transform: translate(-50%, -50%) rotate(-1.5deg) scale(1.08);
+            box-shadow: var(--card-shadow-drag);
+            border-radius: 14px;
+            padding: 12px 10px;
+            width: 120px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
+            line-height: 1.4;
+            border: 2.5px solid rgba(255, 255, 255, 0.8);
+            transition: none;
+            will-change: left, top;
+        }
+
+        /* 按钮 */
+        .btn-reset {
+            margin-top: 18px;
+            padding: 10px 28px;
+            border-radius: 25px;
+            border: 2px solid #bcaaa4;
+            background: #fff;
+            color: #6b5040;
+            font-size: 0.9rem;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            touch-action: manipulation;
+        }
+        .btn-reset:hover {
+            background: #efebe9;
+            border-color: #8d6e63;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .btn-reset:active {
+            transform: scale(0.95);
+            background: #e0d5c7;
+        }
+
+        /* 成功动画提示（可选） */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #fff;
+            color: #558b2f;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.03em;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+            z-index: 10000;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #c8e6c9;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 700px) {
+            .slot {
+                width: 100px;
+                min-height: 72px;
+                border-radius: 12px;
+                border-width: 2px;
+            }
+            .card {
+                width: 96px;
+                min-height: 66px;
+                padding: 10px 7px;
+                border-radius: 11px;
+                font-size: 0.75rem;
+                gap: 4px;
+            }
+            .card .card-icon {
+                font-size: 1.3rem;
+            }
+            .card .card-text {
+                font-size: 0.7rem;
+            }
+            .drag-ghost {
+                width: 96px;
+                min-height: 66px;
+                padding: 10px 7px;
+                font-size: 0.75rem;
+                border-radius: 11px;
+            }
+            .slots-container {
+                gap: 6px;
+                padding: 10px 6px;
+                border-radius: 16px;
+            }
+            .cards-pool {
+                gap: 8px;
+                padding: 12px 8px;
+                border-radius: 16px;
+            }
+            .slot .slot-number {
+                font-size: 0.6rem;
+                top: 3px;
+                left: 6px;
+            }
+            .deco-item {
+                font-size: 18px !important;
+                opacity: 0.25;
+            }
+        }
+        @media (max-width: 480px) {
+            .slot {
+                width: 60px;
+                min-height: 58px;
+                border-radius: 10px;
+                border-width: 1.8px;
+            }
+            .card {
+                width: 72px;
+                min-height: 54px;
+                padding: 7px 5px;
+                border-radius: 9px;
+                font-size: 0.68rem;
+                gap: 2px;
+            }
+            .card .card-icon {
+                font-size: 1.1rem;
+            }
+            .card .card-text {
+                font-size: 0.62rem;
+                line-height: 1.25;
+            }
+            .drag-ghost {
+                width: 72px;
+                min-height: 54px;
+                padding: 7px 5px;
+                font-size: 0.68rem;
+                border-radius: 9px;
+                gap: 2px;
+            }
+            .drag-ghost .card-icon {
+                font-size: 1.1rem;
+            }
+            .drag-ghost .card-text {
+                font-size: 0.62rem;
+                line-height: 1.25;
+            }
+            .slots-container {
+                gap: 4px;
+                padding: 8px 4px;
+                border-radius: 12px;
+                min-height: 70px;
+            }
+            .cards-pool {
+                gap: 5px;
+                padding: 10px 5px;
+                border-radius: 12px;
+                min-height: 70px;
+            }
+            .slot .slot-number {
+                font-size: 0.5rem;
+                top: 2px;
+                left: 4px;
+            }
+            .slot .empty-placeholder {
+                font-size: 0.6rem;
+                padding: 3px;
+            }
+            .title {
+                font-size: 1.3rem;
+            }
+            .subtitle {
+                font-size: 0.72rem;
+            }
+            .hint-text {
+                font-size: 0.7rem;
+            }
+            .deco-item {
+                font-size: 14px !important;
+                opacity: 0.2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+        <span class="deco-item">🌾</span>
+        <span class="deco-item">🌻</span>
+        <span class="deco-item">☀️</span>
+        <span class="deco-item">🌸</span>
+        <span class="deco-item">🍃</span>
+        <span class="deco-item">🏡</span>
+        <span class="deco-item">🌿</span>
+        <span class="deco-item">🐦</span>
+        <span class="deco-item">🌾</span>
+        <span class="deco-item">🌼</span>
+        <span class="deco-item">☁️</span>
+        <span class="deco-item">🍂</span>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 标题 -->
+        <div class="header">
+            <div class="header-icon-row">
+                <span class="icon-spark">✨</span>
+                <h1 class="title">小岗村的故事</h1>
+                <span class="icon-spark">✨</span>
+            </div>
+            <p class="subtitle">—— 拖拽卡片，还原历史顺序 ——</p>
+        </div>
+
+        <!-- 提示 -->
+        <div class="hint-text">
+            <span class="hint-emoji">👆</span> 将下方卡片拖到上方空位中
+            <span class="hint-emoji">📦</span> 可自由排序，无对错之分
+        </div>
+
+        <!-- 上方空位区 -->
+        <div class="slots-section">
+            <div class="slots-label">📋 排序空位（拖放卡片到这里）</div>
+            <div class="slots-container" id="slotsContainer">
+                <div class="slot" data-slot-id="0">
+                    <span class="slot-number">①</span>
+                    <span class="empty-placeholder">空位</span>
+                </div>
+                <div class="slot" data-slot-id="1">
+                    <span class="slot-number">②</span>
+                    <span class="empty-placeholder">空位</span>
+                </div>
+                <div class="slot" data-slot-id="2">
+                    <span class="slot-number">③</span>
+                    <span class="empty-placeholder">空位</span>
+                </div>
+                <div class="slot" data-slot-id="3">
+                    <span class="slot-number">④</span>
+                    <span class="empty-placeholder">空位</span>
+                </div>
+                <div class="slot" data-slot-id="4">
+                    <span class="slot-number">⑤</span>
+                    <span class="empty-placeholder">空位</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下方卡片池 -->
+        <div class="pool-section">
+            <div class="pool-label">🎴 卡片池（从这里拖拽）</div>
+            <div class="cards-pool" id="cardsPool">
+                <!-- 卡片由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 重置按钮 -->
+        <button class="btn-reset" id="btnReset" title="重置所有卡片">
+            🔄 重新排列
+        </button>
+    </div>
+
+    <script>
+        (function() {
+            // ============ 数据定义 ============
+            const cardData = [
+                { id: 'card-0', text: '旧制度束缚积极性，村民穷得揭不开锅', icon: '😞', colorClass: 'card-color-0' },
+                { id: 'card-1', text: '18户农民偷偷按下红手印', icon: '✋', colorClass: 'card-color-1' },
+                { id: 'card-2', text: '实行新制度，把田地分给每一户', icon: '📋', colorClass: 'card-color-2' },
+                { id: 'card-3', text: '农民积极性提高，多劳多得', icon: '💪', colorClass: 'card-color-3' },
+                { id: 'card-4', text: '粮食获得大丰收', icon: '🌾', colorClass: 'card-color-4' },
+            ];
+
+            // ============ DOM 引用 ============
+            const slotsContainer = document.getElementById('slotsContainer');
+            const cardsPool = document.getElementById('cardsPool');
+            const btnReset = document.getElementById('btnReset');
+            const toastEl = document.getElementById('toast');
+            const allSlots = Array.from(slotsContainer.querySelectorAll('.slot'));
+
+            // ============ 状态管理 ============
+            // slotOccupants[slotId] = cardId | null
+            const slotOccupants = {};
+            allSlots.forEach(slot => {
+                slotOccupants[slot.dataset.slotId] = null;
+            });
+
+            // cardLocation[cardId] = 'pool' | 'slot-{slotId}'
+            const cardLocation = {};
+            cardData.forEach(c => {
+                cardLocation[c.id] = 'pool';
+            });
+
+            // ============ 拖拽状态 ============
+            let dragState = null;
+            // dragState = {
+            //   cardId: string,
+            //   sourceType: 'pool' | 'slot',
+            //   sourceSlotId: string | null,
+            //   ghostEl: HTMLElement,
+            //   originalCardEl: HTMLElement,
+            //   pointerOffsetX: number,
+            //   pointerOffsetY: number,
+            //   activePointerId: number,
+            // }
+
+            // ============ 渲染函数 ============
+            function renderAll() {
+                renderSlots();
+                renderPool();
+            }
+
+            function renderSlots() {
+                allSlots.forEach(slot => {
+                    const slotId = slot.dataset.slotId;
+                    const occupantCardId = slotOccupants[slotId];
+
+                    // 清除旧内容（保留slot-number）
+                    const slotNumber = slot.querySelector('.slot-number');
+                    slot.innerHTML = '';
+                    if (slotNumber) slot.appendChild(slotNumber);
+
+                    if (occupantCardId) {
+                        // 该空位被占用，渲染卡片
+                        slot.classList.add('slot-occupied');
+                        const cardInfo = cardData.find(c => c.id === occupantCardId);
+                        const cardEl = createCardElement(cardInfo, true);
+                        slot.appendChild(cardEl);
+                    } else {
+                        // 空位
+                        slot.classList.remove('slot-occupied');
+                        const placeholder = document.createElement('span');
+                        placeholder.className = 'empty-placeholder';
+                        placeholder.textContent = '空位';
+                        slot.appendChild(placeholder);
+                    }
+                });
+            }
+
+            function renderPool() {
+                // 找出所有在卡片池中的卡片
+                const poolCardIds = cardData
+                    .filter(c => cardLocation[c.id] === 'pool')
+                    .map(c => c.id);
+
+                cardsPool.innerHTML = '';
+
+                if (poolCardIds.length === 0) {
+                    const emptyHint = document.createElement('span');
+                    emptyHint.className = 'pool-empty-hint';
+                    emptyHint.textContent = '所有卡片已放入空位 ✨';
+                    cardsPool.appendChild(emptyHint);
+                } else {
+                    poolCardIds.forEach(cardId => {
+                        const cardInfo = cardData.find(c => c.id === cardId);
+                        const cardEl = createCardElement(cardInfo, false);
+                        cardsPool.appendChild(cardEl);
+                    });
+                }
+            }
+
+            function createCardElement(cardInfo, isInSlot) {
+                const el = document.createElement('div');
+                el.className = `card ${cardInfo.colorClass}`;
+                el.dataset.cardId = cardInfo.id;
+                el.setAttribute('touch-action', 'none');
+                el.setAttribute('draggable', 'false'); // 禁用原生拖拽
+
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'card-icon';
+                iconSpan.textContent = cardInfo.icon;
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'card-text';
+                textSpan.textContent = cardInfo.text;
+
+                el.appendChild(iconSpan);
+                el.appendChild(textSpan);
+
+                // 绑定pointer事件
+                el.addEventListener('pointerdown', onPointerDown, { passive: false });
+
+                return el;
+            }
+
+            // ============ 获取卡片当前所在的DOM元素 ============
+            function getCardDOMElement(cardId) {
+                // 在slot或pool中查找
+                const allCards = document.querySelectorAll('.card');
+                for (const cardEl of allCards) {
+                    if (cardEl.dataset.cardId === cardId && cardEl !== dragState?.ghostEl) {
+                        return cardEl;
+                    }
+                }
+                return null;
+            }
+
+            // ============ Pointer事件处理 ============
+            function onPointerDown(event) {
+                // 如果已有拖拽进行中，忽略
+                if (dragState) return;
+
+                const cardEl = event.currentTarget;
+                const cardId = cardEl.dataset.cardId;
+                if (!cardId) return;
+
+                // 阻止默认行为（防止滚动、选择等）
+                event.preventDefault();
+                event.stopPropagation();
+
+                // 获取指针捕获
+                cardEl.setPointerCapture(event.pointerId);
+
+                // 记录来源
+                const sourceType = cardLocation[cardId] === 'pool' ? 'pool' : 'slot';
+                let sourceSlotId = null;
+                if (sourceType === 'slot') {
+                    sourceSlotId = cardLocation[cardId].replace('slot-', '');
+                }
+
+                // 获取卡片在页面中的位置
+                const rect = cardEl.getBoundingClientRect();
+                const pointerOffsetX = event.clientX - rect.left;
+                const pointerOffsetY = event.clientY - rect.top;
+
+                // 创建幽灵元素
+                const ghostEl = document.createElement('div');
+                ghostEl.className = `drag-ghost ${cardData.find(c => c.id === cardId)?.colorClass || ''}`;
+                ghostEl.style.left = event.clientX + 'px';
+                ghostEl.style.top = event.clientY + 'px';
+                ghostEl.style.width = rect.width + 'px';
+                ghostEl.style.minHeight = rect.height + 'px';
+
+                // 复制内容
+                const cardInfo = cardData.find(c => c.id === cardId);
+                const ghostIcon = document.createElement('span');
+                ghostIcon.className = 'card-icon';
+                ghostIcon.textContent = cardInfo.icon;
+                const ghostText = document.createElement('span');
+                ghostText.className = 'card-text';
+                ghostText.textContent = cardInfo.text;
+                ghostEl.appendChild(ghostIcon);
+                ghostEl.appendChild(ghostText);
+
+                document.body.appendChild(ghostEl);
+
+                // 原始卡片变暗
+                cardEl.classList.add('card-dragging');
+
+                // 设置拖拽状态
+                dragState = {
+                    cardId: cardId,
+                    sourceType: sourceType,
+                    sourceSlotId: sourceSlotId,
+                    ghostEl: ghostEl,
+                    originalCardEl: cardEl,
+                    pointerOffsetX: pointerOffsetX,
+                    pointerOffsetY: pointerOffsetY,
+                    activePointerId: event.pointerId,
+                };
+
+                // 监听全局move和up
+                window.addEventListener('pointermove', onPointerMove, { passive: false });
+                window.addEventListener('pointerup', onPointerUp, { passive: false });
+                window.addEventListener('pointercancel', onPointerUp, { passive: false });
+                // 也监听lostpointercapture（以防浏览器主动释放捕获）
+                cardEl.addEventListener('lostpointercapture', onLostPointerCapture, { once: true });
+
+                // 高亮提示
+                updateHighlights(event.clientX, event.clientY);
+            }
+
+            function onPointerMove(event) {
+                if (!dragState) return;
+                if (event.pointerId !== dragState.activePointerId) return;
+
+                event.preventDefault();
+
+                // 移动幽灵元素
+                const ghostEl = dragState.ghostEl;
+                ghostEl.style.left = event.clientX + 'px';
+                ghostEl.style.top = event.clientY + 'px';
+
+                // 更新高亮
+                updateHighlights(event.clientX, event.clientY);
+            }
+
+            function onPointerUp(event) {
+                if (!dragState) return;
+                if (event.pointerId !== dragState.activePointerId) return;
+
+                event.preventDefault();
+                finalizeDrag(event.clientX, event.clientY);
+            }
+
+            function onLostPointerCapture(event) {
+                // 如果浏览器主动释放了指针捕获，且拖拽仍在进行，则取消拖拽
+                if (!dragState) return;
+                // 使用幽灵元素最后已知的位置
+                const ghostEl = dragState.ghostEl;
+                const left = parseFloat(ghostEl.style.left);
+                const top = parseFloat(ghostEl.style.top);
+                if (!isNaN(left) && !isNaN(top)) {
+                    finalizeDrag(left, top);
+                } else {
+                    cancelDrag();
+                }
+            }
+
+            function finalizeDrag(clientX, clientY) {
+                const state = dragState;
+                if (!state) return;
+
+                // 清理监听器
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
+
+                // 移除幽灵元素
+                if (state.ghostEl && state.ghostEl.parentNode) {
+                    state.ghostEl.parentNode.removeChild(state.ghostEl);
+                }
+
+                // 恢复原始卡片样式
+                if (state.originalCardEl) {
+                    state.originalCardEl.classList.remove('card-dragging');
+                }
+
+                // 释放指针捕获
+                try {
+                    if (state.originalCardEl && state.originalCardEl.hasPointerCapture) {
+                        state.originalCardEl.releasePointerCapture(state.activePointerId);
+                    }
+                } catch (e) {
+                    // 忽略
+                }
+
+                // 检测目标位置
+                const target = detectDropTarget(clientX, clientY, state);
+
+                // 清除所有高亮
+                clearAllHighlights();
+
+                // 执行放置
+                if (target.type === 'slot') {
+                    placeCardInSlot(state, target.slotId);
+                } else if (target.type === 'pool') {
+                    placeCardInPool(state);
+                } else {
+                    // 无效位置，卡片回到原处
+                    revertCard(state);
+                }
+
+                // 重置拖拽状态
+                dragState = null;
+
+                // 重新渲染
+                renderAll();
+
+                // 可选：显示提示
+                if (target.type === 'slot') {
+                    showToast('✅ 卡片已放入空位');
+                } else if (target.type === 'pool') {
+                    showToast('📦 卡片已回到卡片池');
+                }
+            }
+
+            function cancelDrag() {
+                const state = dragState;
+                if (!state) return;
+
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
+
+                if (state.ghostEl && state.ghostEl.parentNode) {
+                    state.ghostEl.parentNode.removeChild(state.ghostEl);
+                }
+                if (state.originalCardEl) {
+                    state.originalCardEl.classList.remove('card-dragging');
+                }
+                try {
+                    if (state.originalCardEl && state.originalCardEl.hasPointerCapture) {
+                        state.originalCardEl.releasePointerCapture(state.activePointerId);
+                    }
+                } catch (e) {}
+
+                clearAllHighlights();
+                dragState = null;
+                renderAll();
+            }
+
+            // ============ 检测放置目标 ============
+            function detectDropTarget(clientX, clientY, state) {
+                // 临时隐藏幽灵元素以便检测下方元素
+                const ghostEl = state.ghostEl;
+                const prevDisplay = ghostEl.style.display;
+                ghostEl.style.display = 'none';
+
+                let targetEl = document.elementFromPoint(clientX, clientY);
+                // 如果找到的是body或装饰元素，向上查找
+                while (targetEl && !targetEl.closest('.slot') && !targetEl.closest('#cardsPool') &&
+                    targetEl !== document.body && targetEl !== document.documentElement) {
+                    targetEl = targetEl.parentElement;
+                }
+
+                ghostEl.style.display = prevDisplay;
+
+                // 检查是否在slot上
+                const slotEl = targetEl?.closest('.slot');
+                if (slotEl) {
+                    const slotId = slotEl.dataset.slotId;
+                    if (slotId !== undefined) {
+                        return { type: 'slot', slotId: slotId };
+                    }
+                }
+
+                // 检查是否在卡片池上
+                const poolEl = targetEl?.closest('#cardsPool');
+                if (poolEl) {
+                    return { type: 'pool' };
+                }
+
+                // 也检查坐标是否在slot或pool的边界内（更可靠的检测方式）
+                // 检查slots
+                for (const slot of allSlots) {
+                    const rect = slot.getBoundingClientRect();
+                    if (clientX >= rect.left && clientX <= rect.right &&
+                        clientY >= rect.top && clientY <= rect.bottom) {
+                        return { type: 'slot', slotId: slot.dataset.slotId };
+                    }
+                }
+
+                // 检查pool
+                const poolRect = cardsPool.getBoundingClientRect();
+                if (clientX >= poolRect.left && clientX <= poolRect.right &&
+                    clientY >= poolRect.top && clientY <= poolRect.bottom) {
+                    return { type: 'pool' };
+                }
+
+                return { type: 'none' };
+            }
+
+            function updateHighlights(clientX, clientY) {
+                clearAllHighlights();
+
+                // 检测slot
+                for (const slot of allSlots) {
+                    const rect = slot.getBoundingClientRect();
+                    if (clientX >= rect.left && clientX <= rect.right &&
+                        clientY >= rect.top && clientY <= rect.bottom) {
+                        slot.classList.add('slot-highlight');
+                        slotsContainer.classList.add('highlight-zone');
+                        return;
+                    }
+                }
+
+                // 检测pool
+                const poolRect = cardsPool.getBoundingClientRect();
+                if (clientX >= poolRect.left && clientX <= poolRect.right &&
+                    clientY >= poolRect.top && clientY <= poolRect.bottom) {
+                    cardsPool.classList.add('pool-highlight');
+                }
+            }
+
+            function clearAllHighlights() {
+                allSlots.forEach(s => s.classList.remove('slot-highlight'));
+                slotsContainer.classList.remove('highlight-zone');
+                cardsPool.classList.remove('pool-highlight');
+            }
+
+            // ============ 放置逻辑 ============
+            function placeCardInSlot(state, targetSlotId) {
+                const cardId = state.cardId;
+
+                // 如果目标slot已被占用，将占用者移回卡片池
+                const displacedCardId = slotOccupants[targetSlotId];
+                if (displacedCardId && displacedCardId !== cardId) {
+                    cardLocation[displacedCardId] = 'pool';
+                    slotOccupants[targetSlotId] = null;
+                }
+
+                // 如果卡片来自另一个slot，清空原slot
+                if (state.sourceType === 'slot' && state.sourceSlotId !== null) {
+                    if (slotOccupants[state.sourceSlotId] === cardId) {
+                        slotOccupants[state.sourceSlotId] = null;
+                    }
+                }
+
+                // 放置卡片
+                slotOccupants[targetSlotId] = cardId;
+                cardLocation[cardId] = 'slot-' + targetSlotId;
+            }
+
+            function placeCardInPool(state) {
+                const cardId = state.cardId;
+
+                // 如果卡片来自slot，清空原slot
+                if (state.sourceType === 'slot' && state.sourceSlotId !== null) {
+                    if (slotOccupants[state.sourceSlotId] === cardId) {
+                        slotOccupants[state.sourceSlotId] = null;
+                    }
+                }
+
+                // 卡片回到卡片池
+                cardLocation[cardId] = 'pool';
+            }
+
+            function revertCard(state) {
+                // 什么都不做，卡片保持在原位置
+                // cardLocation和slotOccupants都不变
+            }
+
+            // ============ Toast提示 ============
+            let toastTimer = null;
+
+            function showToast(message) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toastEl.textContent = message;
+                toastEl.classList.add('show');
+                toastTimer = setTimeout(() => {
+                    toastEl.classList.remove('show');
+                    toastTimer = null;
+                }, 1800);
+            }
+
+            // ============ 重置按钮 ============
+            btnReset.addEventListener('click', () => {
+                // 清空所有slot
+                allSlots.forEach(slot => {
+                    slotOccupants[slot.dataset.slotId] = null;
+                });
+                // 所有卡片回到卡片池
+                cardData.forEach(c => {
+                    cardLocation[c.id] = 'pool';
+                });
+                // 清除拖拽状态
+                if (dragState) {
+                    if (dragState.ghostEl && dragState.ghostEl.parentNode) {
+                        dragState.ghostEl.parentNode.removeChild(dragState.ghostEl);
+                    }
+                    if (dragState.originalCardEl) {
+                        dragState.originalCardEl.classList.remove('card-dragging');
+                    }
+                    try {
+                        if (dragState.originalCardEl && dragState.originalCardEl.hasPointerCapture) {
+                            dragState.originalCardEl.releasePointerCapture(dragState.activePointerId);
+                        }
+                    } catch (e) {}
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                    window.removeEventListener('pointercancel', onPointerUp);
+                    dragState = null;
+                }
+                clearAllHighlights();
+                renderAll();
+                showToast('🔄 已重置，开始重新排序吧~');
+            });
+
+            // ============ 阻止全局的意外拖拽行为 ============
+            document.addEventListener('dragstart', function(e) {
+                // 阻止所有原生拖拽
+                if (e.target.closest('.card') || e.target.closest('.slot') || e.target.closest(
+                        '#cardsPool')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // 阻止移动端长按菜单（在卡片和slot上）
+            document.addEventListener('contextmenu', function(e) {
+                if (e.target.closest('.card') || e.target.closest('.slot')) {
+                    e.preventDefault();
+                }
+            });
+
+            // 全局pointerup处理（防止pointerup在window外时状态残留）
+            window.addEventListener('pointerup', function(e) {
+                if (dragState && e.pointerId === dragState.activePointerId) {
+                    // 如果pointerup在window上触发但未被卡片捕获处理
+                    finalizeDrag(e.clientX, e.clientY);
+                }
+            });
+
+            // 处理窗口失去焦点的情况
+            window.addEventListener('blur', function() {
+                if (dragState) {
+                    cancelDrag();
+                }
+            });
+
+            // 处理页面可见性变化
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden && dragState) {
+                    cancelDrag();
+                }
+            });
+
+            // ============ 初始渲染 ============
+            renderAll();
+
+            console.log('🌾 小岗村的故事 - 拖拽排序已就绪');
+            console.log('   ✅ 支持桌面端鼠标拖拽');
+            console.log('   ✅ 支持移动端触摸拖拽');
+            console.log('   ✅ 使用Pointer事件，兼容性好');
+            console.log('   ✅ 卡片可自由拖放到任意空位');
+            console.log('   ✅ 空位中的卡片也可拖出');
+            console.log('   📱 移动端拖拽松手后卡片不会消失');
+        })();
+    </script>
+</body>
+</html>
